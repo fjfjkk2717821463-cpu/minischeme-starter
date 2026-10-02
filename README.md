@@ -2,6 +2,35 @@
 
 以下由AI生成。
 
+## 实现说明（提交者补充）
+
+解释器已完成，入口为 `src/main.py`，通过全部 12 组验收用例。
+
+运行方式（在仓库根目录）：
+
+```
+python3 src/main.py example/01_arithmetic.scm     # 跑单个示例程序
+python3 autograder.pyz python3 src/main.py        # 跑全部自查用例
+```
+
+代码按"文本 → 表达式 → 值 → 文本"的流水线分层，每层一个文件：
+
+| 文件 | 职责 |
+|---|---|
+| `src/values.py` | 符号、点对、空表、过程等值类型与类型判断 |
+| `src/errors.py` | 统一错误类型，带行列号 |
+| `src/tokenizer.py` | 词法分析：注释、字符串转义、整数与浮点、布尔、符号 |
+| `src/reader.py` | 语法分析：词序列 → 表达式树，支持 `'` 简写与 `(1 . 2)` |
+| `src/environment.py` | 绑定表加外层指针，构成词法作用域链 |
+| `src/printer.py` | 值的 write 与 display 两种打印口径 |
+| `src/primitives.py` | spec §5 的全部内置过程 |
+| `src/evaluator.py` | 求值器：evaluate 与 apply 互相递归，9 个特殊形式 |
+| `src/main.py` | 命令行入口：读文件或标准输入，逐行打印结果 |
+
+容易写错的地方都已按规范处理：整数相除向零截断、`and`/`or` 短路、
+闭包捕获定义时的环境、`let` 并行绑定、`eq?` 比同一性而 `equal?` 比结构、
+顶层打印与 `display` 两种口径。
+
 ## 1. 任务目标与考察内容
 
 **任务**：vibe coding，从零写出一个符合 `spec.md` 的 mini-Scheme 解释器，让全部验收测试通过。预计 30 分钟。你不需要会编程——你负责向 AI 描述需求、验证结果、报错时继续迭代。
@@ -69,4 +98,3 @@ python3 autograder.pyz python3 src/main.py
 - `apply(proc, args)`：调用一个过程。内置过程 → 直接调用；用户函数（闭包）→ 新建一层环境把实参绑到参数名上（外层指向函数**定义时**的环境），再回到 evaluate 求值函数体。
 
 evaluate 遇到函数调用就调 apply，apply 执行函数体又调回 evaluate——想通这个循环，解释器就成了一半。
-
